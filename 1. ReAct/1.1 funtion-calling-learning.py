@@ -80,7 +80,7 @@ def run_conversation(user_message: str):
 
         # 第二次请求：让 LLM 根据工具结果生成最终回复
         final_response = openai.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-5",
             messages=messages,
             tools=tools,
         )
