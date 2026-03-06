@@ -7,7 +7,16 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def weather_forecast(city: str) -> str:
-    return f"sunny, 22°C"
+    if city == "上海":
+        return f"sunny, 22°C"
+    elif city == "北京":
+        return f"cloudy, -5°C"
+    elif city == "广州":
+        return f"rainy, 20°C"
+    elif city == "深圳":
+        return f"sunny, 22°C"
+    else:
+        return f"错误：请用中文搜索"
 
 def web_search(query: str) -> str:
     return f"Precipitation: 10mm, Wind: 10km/h"
@@ -149,8 +158,9 @@ def execute_step(step: str, context: list) -> str:
         {"role": "user", "content": step},
     ]
 
-    max_iterations = 5
-    for i in range(max_iterations):
+    last_tool_result = ""
+    max_tool_calls = 5
+    for i in range(max_tool_calls):
         response = openai.chat.completions.create(
             model = "gpt-4o",
             messages = messages,
@@ -168,6 +178,7 @@ def execute_step(step: str, context: list) -> str:
             print(f"    [工具调用] {func_name}({func_args})")
 
             result = available_tools[func_name](**func_args)
+            last_tool_result = f"{func_name}({func_args}) -> {result}"
             print(f"    [工具结果] {result}")
 
             messages.append({
@@ -176,7 +187,16 @@ def execute_step(step: str, context: list) -> str:
                 "content": str(result),
             })
 
-    return "Failed to complete step within max iterations."
+    response = openai.chat.completions.create(
+        model = "gpt-4o",
+        messages = messages,
+        tools = tools,
+    )
+    msg = response.choices[0].message
+    if not msg.tool_calls:
+        return msg.content
+
+    return f"Failed after {max_tool_calls} iterations. Last tool result: {last_tool_result}"
 
 def replan(user_input: str, original_steps: list, completed: list, remaining: list) -> list:
     response = openai.chat.completions.create(
