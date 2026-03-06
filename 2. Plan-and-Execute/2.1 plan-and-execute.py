@@ -7,16 +7,16 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def weather_forecast(city: str) -> str:
-    if city == "上海":
-        return f"sunny, 22°C"
-    elif city == "北京":
-        return f"cloudy, -5°C"
-    elif city == "广州":
-        return f"rainy, 20°C"
-    elif city == "深圳":
-        return f"sunny, 22°C"
+    if city == "Tokyo":
+        return f"sunny, 22C"
+    elif city == "Osaka":
+        return f"cloudy, -5C"
+    elif city == "Kyoto":
+        return f"rainy, 20C"
+    elif city == "Fukuoka":
+        return f"sunny, 22C"
     else:
-        return f"错误：请用中文搜索"
+        return f"Error: city not found"
 
 def web_search(query: str) -> str:
     return f"Precipitation: 10mm, Wind: 10km/h"
@@ -175,11 +175,11 @@ def execute_step(step: str, context: list) -> str:
         for tool_call in msg.tool_calls:
             func_name = tool_call.function.name
             func_args = json.loads(tool_call.function.arguments)
-            print(f"    [工具调用] {func_name}({func_args})")
+            print(f"    [Tool Call] {func_name}({func_args})")
 
             result = available_tools[func_name](**func_args)
             last_tool_result = f"{func_name}({func_args}) -> {result}"
-            print(f"    [工具结果] {result}")
+            print(f"    [Tool Result] {result}")
 
             messages.append({
                 "role": "tool",
@@ -228,22 +228,25 @@ def replan(user_input: str, original_steps: list, completed: list, remaining: li
     return remaining
 
 def run():
-    print("Plan-and-Execute Agent（输入 q 退出）")
+    print("Plan-and-Execute Agent (press q to quit)")
     print("=" * 50)
 
     while True:
-        user_input = input("\n用户: ")
+        user_input = input("\nUser: ")
+
+        # Exit the loop if the user inputs "q"
         if user_input.lower() == "q":
-            print("再见！")
+            print("Goodbye!")
             break
         
-        print("\n 正在规划...")
+        # Step 1: Plan the steps
+        print("\n Planning...")
         steps = plan(user_input)
-        print(f"计划（共 {len(steps)} 步）:")
+        print(f"Plan ({len(steps)} steps):")
         for i, step in enumerate(steps):
             print(f"  {i+1}. {step}")
 
-        # Step 2: Executor 逐步执行，每步后 replan
+        # Step 2: Execute each step, replan after each
         context = []
         remaining = steps[:]
         step_num = 0
@@ -251,25 +254,25 @@ def run():
         while remaining:
             step = remaining.pop(0)
             step_num += 1
-            print(f"\n▶ 执行第 {step_num} 步: {step}")
+            print(f"\n> Executing step {step_num}: {step}")
             result = execute_step(step, context)
             context.append(f"{step} → {result}")
-            print(f"  结果: {result}")
+            print(f"  Result: {result}")
 
-            # Replan: 检查剩余计划是否需要调整
+            # Replan: check if remaining plan needs adjustment
             if remaining:
-                print("\n  🔄 检查是否需要调整计划...")
+                print("\n  Checking if replan is needed...")
                 new_remaining = replan(user_input, steps, context, remaining)
                 if new_remaining != remaining:
-                    print("  📋 计划已调整:")
+                    print("  Plan adjusted:")
                     for i, s in enumerate(new_remaining):
                         print(f"    {step_num + i + 1}. {s}")
                     remaining = new_remaining
                 else:
-                    print("  ✅ 计划不变，继续执行")
+                    print("  Plan unchanged, continuing")
 
-        # Step 3: 最终整合
-        print("\n📝 整合最终回答...")
+        # Step 3: Synthesize final answer
+        print("\n Synthesizing final answer...")
         final = openai.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -286,7 +289,7 @@ def run():
                 },
             ],
         )
-        print(f"\n最终回答: {final.choices[0].message.content}")
+        print(f"\nFinal Answer: {final.choices[0].message.content}")
 
 if __name__ == "__main__":
     run()
