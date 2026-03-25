@@ -9,3 +9,5 @@ dist/
 build/
 .DS_Store
 Thumbs.db
+ai-agent-roadmap.md
+ai-agent-roadmap-zh.md
